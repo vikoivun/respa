@@ -201,6 +201,8 @@ class Resource(ModifiableModel):
         begin = opening+(time_slots_since_opening*self.min_period)
         # Duration is calculated modulo time slot
         duration_in_slots = int((end-begin)/self.min_period)
+        if duration_in_slots == 0:
+            raise ValidationError(_("The minimum duration for a reservation is "+str(self.min_period)))
         if self.max_period:
             if duration_in_slots > self.max_period/self.min_period:
                 raise ValidationError(_("The maximum reservation length is "+str(self.max_period)))

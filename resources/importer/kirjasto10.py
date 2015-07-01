@@ -27,7 +27,6 @@ class Kirjasto10Importer(Importer):
         data = list(reader)
 
         for res_data in data:
-            pprint(res_data)
             res_type, created = ResourceType.objects.get_or_create(
                 #  TODO: Catch key error if resource type unknown
                 id=self.resource_ids[res_data['Tilatyyppi 1']],
