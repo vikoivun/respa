@@ -1,6 +1,7 @@
 import csv
 import requests
 import io
+import datetime
 from pprint import pprint
 
 from .base import Importer, register_importer
@@ -26,6 +27,7 @@ class Kirjasto10Importer(Importer):
         data = list(reader)
 
         for res_data in data:
+            pprint(res_data)
             res_type, created = ResourceType.objects.get_or_create(
                 #  TODO: Catch key error if resource type unknown
                 id=self.resource_ids[res_data['Tilatyyppi 1']],
@@ -50,6 +52,14 @@ class Kirjasto10Importer(Importer):
                 people_capacity = int(res_data['Henkilömäärä'])
             except ValueError:
                 people_capacity = None
+            try:
+                min_period = datetime.timedelta(minutes=int(60*float(res_data['Varausaika min'].replace(',', '.'))))
+            except ValueError:
+                min_period = datetime.timedelta(minutes=30)
+            try:
+                max_period = datetime.timedelta(minutes=int(60*float(res_data['Varausaika max'].replace(',', '.'))))
+            except ValueError:
+                max_period = None
 
             res, created = unit.resources.get_or_create(
                 #  TODO: Better ids here also, without this invalid resource objects gets created
@@ -59,5 +69,7 @@ class Kirjasto10Importer(Importer):
                 people_capacity=people_capacity,
                 area=area,
                 need_manual_confirmation=confirm,
-                description_fi=res_data['Kuvaus']
+                description_fi=res_data['Kuvaus'],
+                min_period=min_period,
+                max_period=max_period
             )
