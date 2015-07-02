@@ -279,6 +279,8 @@ class Period(models.Model):
     A period of time to express state of open or closed
     Days that specifies the actual activity hours link here
     """
+    parent = models.ForeignKey('Period', verbose_name=_('period'), null=True, blank=True)
+    exception = models.BooleanField(verbose_name=_('Exceptional period'), default=False)
     resource = models.ForeignKey(Resource, verbose_name=_('Resource'), db_index=True,
                                  null=True, blank=True, related_name='periods')
     unit = models.ForeignKey(Unit, verbose_name=_('Unit'), db_index=True,
@@ -326,7 +328,9 @@ class Day(models.Model):
     weekday = models.IntegerField(verbose_name=_('Weekday'), choices=DAYS_OF_WEEK)
     opens = models.TimeField(verbose_name=_('Time when opens'), null=True, blank=True)
     closes = models.TimeField(verbose_name=_('Time when closes'), null=True, blank=True)
-    closed = models.NullBooleanField(verbose_name=_('Closed'), default=False)  # NOTE: If this is true and the period is false, what then?
+    # NOTE: If this is true and the period is false, what then?
+    closed = models.NullBooleanField(verbose_name=_('Closed'), default=False)
+    description = models.CharField(max_length=200, verbose_name=_('description'), default=False)
 
     class Meta:
         verbose_name = _("day")
