@@ -4,6 +4,7 @@ from django.contrib.gis.db import models
 from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
 from django.core.exceptions import ValidationError
+from django.db.models import Q
 import django.db.models as dbm
 
 DEFAULT_LANG = settings.LANGUAGES[0][0]
@@ -364,6 +365,32 @@ class Period(models.Model):
         if (self.resource is not None and self.unit is not None) or \
            (self.resource is None and self.unit is None):
             raise ValidationError(_("You must set either 'resource' or 'unit', but not both"))
+
+        if self.resource:
+            old_periods = self.resource.periods
+        else:
+            old_periods = self.unit.periods
+
+        # period has an end during the time range
+        ends_during = Q(end__gte=self.start, end__lte=self.end)
+
+        # period has a start during time range
+        starts_during = Q(start__gte=self.start, start__lte=self.end)
+
+        # period starts before and ends after time range
+        larger = Q(start__lte=self.start, end__gte=self.end)
+
+        # if any of these preceding rules is true, period has days on time range
+        overlapping_periods = old_periods.filter(starts_during | ends_during | larger)
+
+        #  Validate periods are not overlapping regular or exceptional periods
+        if self.exception:
+            overlapping_exceptions = overlapping_periods.filter(exception=True)
+            if overlapping_exceptions:
+                raise ValidationError("There is already an exceptional period on these dates")
+        elif overlapping_periods:
+            raise ValidationError("There is already a period on these dates")
+
         return super(Period, self).save(*args, **kwargs)
 
 

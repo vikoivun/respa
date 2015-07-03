@@ -31,7 +31,7 @@ class KirjastotImporter(Importer):
                 start = datetime.datetime.strptime(period['start'], '%Y-%m-%d')
                 if not period['end']:
                     this_day = datetime.date.today()
-                    end = datetime.date(this_day.year + 1 , 12, 31) # No end time goes to end of next year
+                    end = datetime.date(this_day.year + 1, 12, 31) # No end time goes to end of next year
                 else:
                     end = datetime.datetime.strptime(period['end'], '%Y-%m-%d')
                 active_period, created = unit.periods.get_or_create(
