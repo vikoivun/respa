@@ -362,6 +362,8 @@ class Period(models.Model):
         return "{0}, {3}: {1:%d.%m.%Y} - {2:%d.%m.%Y}".format(self.name, self.start, self.end, STATE_BOOLS[self.closed])
 
     def save(self, *args, **kwargs):
+        # Periods are either regular and stand alone or exceptions to regular period and must have a relation to it
+
         if (self.resource is not None and self.unit is not None) or \
            (self.resource is None and self.unit is None):
             raise ValidationError(_("You must set either 'resource' or 'unit', but not both"))
@@ -388,6 +390,22 @@ class Period(models.Model):
             overlapping_exceptions = overlapping_periods.filter(exception=True)
             if overlapping_exceptions:
                 raise ValidationError("There is already an exceptional period on these dates")
+            regular_periods = overlapping_periods.filter(exception=False)
+            if regular_periods > 1:
+                raise ValidationError("Exceptional period can't be exception for more than one period")
+            elif not regular_periods:
+                raise ValidationError("Exceptional period can't be exception without a regular period")
+            elif regular_periods == 1:
+                parent = regular_periods.first()
+                if (parent.start < self.start) and (parent.end < self.end):
+                    # period that encompasses this exceptional period is also this period's parent
+                    self.parent = parent
+                    # continue out of this layer of tests
+                else:
+                    raise ValidationError("Exception period can't be have different times from its regular period")
+            else:
+                raise ValidationError("Somehow exceptional period is too exceptional")
+
         elif overlapping_periods:
             raise ValidationError("There is already a period on these dates")
 
