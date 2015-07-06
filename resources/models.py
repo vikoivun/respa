@@ -8,6 +8,7 @@ from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
 from django.core.exceptions import ValidationError
 from django.db.models import Q
+from django.utils.dateformat import time_format
 import django.db.models as dbm
 import django.contrib.postgres.fields as pgfields
 
@@ -509,5 +510,10 @@ class Day(models.Model):
 
     def __str__(self):
         # FIXME: output date in locale-specific format
-        return "{4}, {3}: {1:%d.%m.%Y} - {2:%d.%m.%Y}, {0}: {3}".format(
-            self.get_weekday_display(), self.period.start, self.period.end, STATE_BOOLS[self.closed], self.period.name)
+        if self.opens and self.closes:
+            hours = ", {0} - {1}".format(time_format(self.opens, "G:i"), time_format(self.closes, "G:i"))
+        else:
+            hours = ""
+        return "{4}, {3}: {1:%d.%m.%Y} - {2:%d.%m.%Y}, {0}: {3} {5}".format(
+            self.get_weekday_display(), self.period.start, self.period.end,
+            STATE_BOOLS[self.closed], self.period.name, hours)
