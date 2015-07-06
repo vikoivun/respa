@@ -1,4 +1,5 @@
-[![Stories in Ready](https://badge.waffle.io/City-of-Helsinki/respa.png?label=ready&title=Ready)](https://waffle.io/City-of-Helsinki/respa)
+# Branch defunct, see altdates_merge
+
 respa – Resource reservation and management service
 ===================
 
