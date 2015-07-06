@@ -7,6 +7,7 @@ from django.contrib.gis.db import models
 from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
 from django.core.exceptions import ValidationError
+from django.db.models import Q
 import django.db.models as dbm
 import django.contrib.postgres.fields as pgfields
 
@@ -220,7 +221,7 @@ class Resource(ModifiableModel, AutoIdentifiedModel):
     description = models.TextField(verbose_name=_('Description'), null=True, blank=True)
     photo = models.URLField(verbose_name=_('Photo URL'), null=True, blank=True)
     need_manual_confirmation = models.BooleanField(verbose_name=_('Need manual confirmation'), default=False)
-    authentication = models.CharField(blank=False, max_length=20, choices=AUTHENTICATION_TYPES)
+    authentication = models.CharField(blank=False, max_length=20, choices=AUTHENTICATION_TYPES, default="none")
     people_capacity = models.IntegerField(verbose_name=_('People capacity'), null=True, blank=True)
     area = models.IntegerField(verbose_name=_('Area'), null=True, blank=True)
     ground_plan = models.URLField(verbose_name=_('Ground plan URL'), null=True, blank=True)
@@ -455,18 +456,18 @@ class Period(models.Model):
             if overlapping_exceptions:
                 raise ValidationError("There is already an exceptional period on these dates")
             regular_periods = overlapping_periods.filter(exception=False)
-            if regular_periods > 1:
+            if len(regular_periods) > 1:
                 raise ValidationError("Exceptional period can't be exception for more than one period")
             elif not regular_periods:
                 raise ValidationError("Exceptional period can't be exception without a regular period")
-            elif regular_periods == 1:
+            elif len(regular_periods) == 1:
                 parent = regular_periods.first()
-                if (parent.start < self.start) and (parent.end < self.end):
+                if (parent.start < self.start) and (parent.end > self.end):
                     # period that encompasses this exceptional period is also this period's parent
                     self.parent = parent
                     # continue out of this layer of tests
                 else:
-                    raise ValidationError("Exception period can't be have different times from its regular period")
+                    raise ValidationError("Exception period can't have different times from its regular period")
             else:
                 raise ValidationError("Somehow exceptional period is too exceptional")
 
@@ -500,7 +501,7 @@ class Day(models.Model):
                                           blank=True, db_index=True)
     # NOTE: If this is true and the period is false, what then?
     closed = models.NullBooleanField(verbose_name=_('Closed'), default=False)
-    description = models.CharField(max_length=200, verbose_name=_('description'), default=False)
+    description = models.CharField(max_length=200, verbose_name=_('description'), null=True, blank=True)
 
     class Meta:
         verbose_name = _("day")
