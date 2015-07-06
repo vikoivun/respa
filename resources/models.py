@@ -8,6 +8,9 @@ from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
 from django.core.exceptions import ValidationError
 import django.db.models as dbm
+import django.contrib.postgres.fields as pgfields
+
+import arrow
 
 DEFAULT_LANG = settings.LANGUAGES[0][0]
 
@@ -373,6 +376,8 @@ class Reservation(ModifiableModel):
     resource = models.ForeignKey(Resource, verbose_name=_('Resource'), db_index=True, related_name='reservations')
     begin = models.DateTimeField(verbose_name=_('Begin time'))
     end = models.DateTimeField(verbose_name=_('End time'))
+    duration = pgfields.DateTimeRangeField(verbose_name=_('Length of reservation'), null=True,
+                                           blank=True, db_index=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name=_('User'), null=True,
                              blank=True, db_index=True)
 
@@ -405,6 +410,8 @@ class Period(models.Model):
 
     start = models.DateField(verbose_name=_('Start date'))
     end = models.DateField(verbose_name=_('End date'))
+    duration = pgfields.DateRangeField(verbose_name=_('Length of period'), null=True,
+                                       blank=True, db_index=True)
     name = models.CharField(max_length=200, verbose_name=_('Name'))
     description = models.CharField(verbose_name=_('Description'), null=True,
                                    blank=True, max_length=500)
@@ -489,6 +496,8 @@ class Day(models.Model):
     weekday = models.IntegerField(verbose_name=_('Weekday'), choices=DAYS_OF_WEEK)
     opens = models.TimeField(verbose_name=_('Time when opens'), null=True, blank=True)
     closes = models.TimeField(verbose_name=_('Time when closes'), null=True, blank=True)
+    length = pgfields.IntegerRangeField(verbose_name=_('Range between opens and closes'), null=True,
+                                          blank=True, db_index=True)
     # NOTE: If this is true and the period is false, what then?
     closed = models.NullBooleanField(verbose_name=_('Closed'), default=False)
     description = models.CharField(max_length=200, verbose_name=_('description'), default=False)
