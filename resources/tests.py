@@ -40,7 +40,7 @@ class ReservationTestCase(TestCase):
         r1a = Resource.objects.get(id='r1a')
         r1b = Resource.objects.get(id='r1b')
 
-        begin = arrow.get('2015-06-01T08:00:00+03:00')
+        begin = arrow.get('2015-06-01T08:00:00+00:00')
         Reservation.objects.create(resource=r1a, begin=begin,
                                    end=begin + datetime.timedelta(hours=2))
 
@@ -50,7 +50,7 @@ class ReservationTestCase(TestCase):
                                        end=begin + datetime.timedelta(hours=2))
 
         # Make a reservation that ends when the resource closes
-        begin = arrow.get('2015-06-01T16:00:00+03:00')
+        begin = arrow.get('2015-06-01T16:00:00+00:00')
         Reservation.objects.create(resource=r1a, begin=begin,
                                    end=begin + datetime.timedelta(hours=2))
 
@@ -73,21 +73,28 @@ class DayTestCase(TestCase):
         Resource.objects.create(name='Resource 2b', id='r2b', unit=u2, type=rt)
 
         # Regular hours for one week
-        p1 = Period.objects.create(start='2015-08-03', end='2015-08-09', unit=u1, name='regular hours')
-        Day.objects.create(period=p1, weekday=0, opens='08:00', closes='18:00')
-        Day.objects.create(period=p1, weekday=1, opens='08:00', closes='18:00')
-        Day.objects.create(period=p1, weekday=2, opens='08:00', closes='18:00')
-        Day.objects.create(period=p1, weekday=3, opens='08:00', closes='18:00')
-        Day.objects.create(period=p1, weekday=4, opens='08:00', closes='18:00')
-        Day.objects.create(period=p1, weekday=5, opens='12:00', closes='16:00')
-        Day.objects.create(period=p1, weekday=6, opens='12:00', closes='14:00')
+        p1 = Period.objects.create(start=datetime.date(2015, 8, 3), end=datetime.date(2015, 8, 9), unit=u1, name='regular hours')
+        Day.objects.create(period=p1, weekday=0, opens=datetime.time(8, 0), closes=datetime.time(18, 0))
+        Day.objects.create(period=p1, weekday=1, opens=datetime.time(8, 0), closes=datetime.time(18, 0))
+        Day.objects.create(period=p1, weekday=2, opens=datetime.time(8, 0), closes=datetime.time(18, 0))
+        Day.objects.create(period=p1, weekday=3, opens=datetime.time(8, 0), closes=datetime.time(18, 0))
+        Day.objects.create(period=p1, weekday=4, opens=datetime.time(8, 0), closes=datetime.time(18, 0))
+        Day.objects.create(period=p1, weekday=5, opens=datetime.time(12, 0), closes=datetime.time(16, 0))
+        Day.objects.create(period=p1, weekday=6, opens=datetime.time(12, 0), closes=datetime.time(14, 0))
 
         # Two shorter days as exception
-        exp1 = Period.objects.create(start='2015-08-06', end='2015-08-07', unit=u1,
+        exp1 = Period.objects.create(start=datetime.date(2015, 8, 6), end=datetime.date(2015, 8, 7), unit=u1,
                                      name='exceptionally short days', exception=True, parent=p1)
-        Day.objects.create(period=exp1, weekday=3, opens='12:00', closes='16:00')
-        Day.objects.create(period=exp1, weekday=4, opens='12:00', closes='16:00')
+        Day.objects.create(period=exp1, weekday=3,
+                           opens=datetime.time(12, 0), closes=datetime.time(14, 0))
+        Day.objects.create(period=exp1, weekday=4,
+                           opens=datetime.time(12, 0), closes=datetime.time(14, 0))
 
         # Weekend is closed as an exception
-        exp2 = Period.objects.create(start='2015-08-08', end='2015-08-09', unit=u1, name='weekend is closed',
-                                     closed=True, exception=True, parent=p1)
+        exp2 = Period.objects.create(start=datetime.date(2015, 8, 8), end=datetime.date(2015, 8, 9), unit=u1,
+            name='weekend is closed', closed=True, exception=True, parent=p1)
+
+    def test_days(self):
+        periods = Period.objects.all()
+        self.assertEqual(len(periods), 3)
+

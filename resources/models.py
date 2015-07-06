@@ -463,7 +463,7 @@ class Period(models.Model):
                 raise ValidationError("Exceptional period can't be exception without a regular period")
             elif len(regular_periods) == 1:
                 parent = regular_periods.first()
-                if (parent.start < self.start) and (parent.end > self.end):
+                if (parent.start <= self.start) and (parent.end >= self.end):
                     # period that encompasses this exceptional period is also this period's parent
                     self.parent = parent
                     # continue out of this layer of tests
