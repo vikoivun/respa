@@ -1,3 +1,6 @@
+import struct
+import base64
+import time
 import datetime
 from django.utils import timezone
 from django.contrib.gis.db import models
@@ -6,6 +9,8 @@ from django.utils.translation import ugettext_lazy as _
 from django.core.exceptions import ValidationError
 from django.db.models import Q
 import django.db.models as dbm
+import django.contrib.postgres.fields as pgfields
+
 import arrow
 
 DEFAULT_LANG = settings.LANGUAGES[0][0]
@@ -17,6 +22,23 @@ def get_translated(obj, attr):
     if not val:
         val = getattr(obj, attr)
     return val
+
+
+def generate_id():
+    t = time.time() * 1000000
+    b = base64.b32encode(struct.pack(">Q", int(t)).lstrip(b'\x00')).strip(b'=').lower()
+    return b.decode('utf8')
+
+
+class AutoIdentifiedModel(models.Model):
+
+    def save(self, *args, **kwargs):
+        if not self.id:
+            self.id = generate_id()
+        super().save(*args, **kwargs)
+
+    class Meta:
+        abstract = True
 
 
 class ModifiableModel(models.Model):
@@ -101,7 +123,7 @@ def get_opening_hours(periods, begin, end=None, tzinfo=None):
 
     return dates
 
-class Unit(ModifiableModel):
+class Unit(ModifiableModel, AutoIdentifiedModel):
     id = models.CharField(primary_key=True, max_length=50)
     name = models.CharField(verbose_name=_('Name'), max_length=200)
     description = models.TextField(verbose_name=_('Description'), null=True, blank=True)
@@ -145,7 +167,7 @@ class UnitIdentifier(models.Model):
         unique_together = (('namespace', 'value'), ('namespace', 'unit'))
 
 
-class ResourceType(ModifiableModel):
+class ResourceType(ModifiableModel, AutoIdentifiedModel):
     MAIN_TYPES = (
         ('space', _('Space')),
         ('person', _('Person')),
@@ -184,7 +206,7 @@ class Purpose(ModifiableModel):
         return "%s (%s)" % (get_translated(self, 'name'), self.id)
 
 
-class Resource(ModifiableModel):
+class Resource(ModifiableModel, AutoIdentifiedModel):
     AUTHENTICATION_TYPES = (
         ('none', _('None')),
         ('weak', _('Weak')),
@@ -199,7 +221,7 @@ class Resource(ModifiableModel):
     description = models.TextField(verbose_name=_('Description'), null=True, blank=True)
     photo = models.URLField(verbose_name=_('Photo URL'), null=True, blank=True)
     need_manual_confirmation = models.BooleanField(verbose_name=_('Need manual confirmation'), default=False)
-    authentication = models.CharField(blank=False, max_length=20, choices=AUTHENTICATION_TYPES)
+    authentication = models.CharField(blank=False, max_length=20, choices=AUTHENTICATION_TYPES, default="none")
     people_capacity = models.IntegerField(verbose_name=_('People capacity'), null=True, blank=True)
     area = models.IntegerField(verbose_name=_('Area'), null=True, blank=True)
     ground_plan = models.URLField(verbose_name=_('Ground plan URL'), null=True, blank=True)
@@ -355,6 +377,8 @@ class Reservation(ModifiableModel):
     resource = models.ForeignKey(Resource, verbose_name=_('Resource'), db_index=True, related_name='reservations')
     begin = models.DateTimeField(verbose_name=_('Begin time'))
     end = models.DateTimeField(verbose_name=_('End time'))
+    duration = pgfields.DateTimeRangeField(verbose_name=_('Length of reservation'), null=True,
+                                           blank=True, db_index=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name=_('User'), null=True,
                              blank=True, db_index=True)
 
@@ -387,6 +411,8 @@ class Period(models.Model):
 
     start = models.DateField(verbose_name=_('Start date'))
     end = models.DateField(verbose_name=_('End date'))
+    duration = pgfields.DateRangeField(verbose_name=_('Length of period'), null=True,
+                                       blank=True, db_index=True)
     name = models.CharField(max_length=200, verbose_name=_('Name'))
     description = models.CharField(verbose_name=_('Description'), null=True,
                                    blank=True, max_length=500)
@@ -430,18 +456,18 @@ class Period(models.Model):
             if overlapping_exceptions:
                 raise ValidationError("There is already an exceptional period on these dates")
             regular_periods = overlapping_periods.filter(exception=False)
-            if regular_periods > 1:
+            if len(regular_periods) > 1:
                 raise ValidationError("Exceptional period can't be exception for more than one period")
             elif not regular_periods:
                 raise ValidationError("Exceptional period can't be exception without a regular period")
-            elif regular_periods == 1:
+            elif len(regular_periods) == 1:
                 parent = regular_periods.first()
-                if (parent.start < self.start) and (parent.end < self.end):
+                if (parent.start < self.start) and (parent.end > self.end):
                     # period that encompasses this exceptional period is also this period's parent
                     self.parent = parent
                     # continue out of this layer of tests
                 else:
-                    raise ValidationError("Exception period can't be have different times from its regular period")
+                    raise ValidationError("Exception period can't have different times from its regular period")
             else:
                 raise ValidationError("Somehow exceptional period is too exceptional")
 
@@ -471,9 +497,11 @@ class Day(models.Model):
     weekday = models.IntegerField(verbose_name=_('Weekday'), choices=DAYS_OF_WEEK)
     opens = models.TimeField(verbose_name=_('Time when opens'), null=True, blank=True)
     closes = models.TimeField(verbose_name=_('Time when closes'), null=True, blank=True)
+    length = pgfields.IntegerRangeField(verbose_name=_('Range between opens and closes'), null=True,
+                                          blank=True, db_index=True)
     # NOTE: If this is true and the period is false, what then?
     closed = models.NullBooleanField(verbose_name=_('Closed'), default=False)
-    description = models.CharField(max_length=200, verbose_name=_('description'), default=False)
+    description = models.CharField(max_length=200, verbose_name=_('description'), null=True, blank=True)
 
     class Meta:
         verbose_name = _("day")
