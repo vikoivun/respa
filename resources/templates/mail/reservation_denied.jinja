@@ -1,3 +1,6 @@
-{% trans resource=reservation.resource.name %}Your preliminary reservation to has been denied.{% endtrans %}
+{% trans %}Your preliminary reservation to has been denied:{% endtrans %}
 
 {% include "mail/_reservation_data.jinja" %}
+
+{% trans %}Please contact the staff at the location, if you wish to know why
+the reservation was denied.{% endtrans %}

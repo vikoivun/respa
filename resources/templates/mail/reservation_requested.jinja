@@ -1,3 +1,11 @@
-{% trans resource=reservation.resource.name %}You have created a preliminary reservation.{% endtrans %}
+{% trans %}
+we have received the following preliminary reservation from you:
+{% endtrans %}
 
 {% include "mail/_reservation_data.jinja" %}
+
+{% trans %}
+We will check the reservation within two days. You will receive a separate confirmation e-mail
+at that time. We will also send you e-mail, if we require further information regarding your
+reservation.
+{% endtrans %}

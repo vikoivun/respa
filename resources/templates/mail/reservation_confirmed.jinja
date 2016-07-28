@@ -1,3 +1,9 @@
-{% trans resource=reservation.resource.name %}Your preliminary reservation has been confirmed.{% endtrans %}
+{% trans %}eYour preliminary reservation has been confirmed:{% endtrans %}
 
 {% include "mail/_reservation_data.jinja" %}
+
+{% trans %}You can cancel the reservation 5 days before the start time, at
+the latest. The cancellation must be done by contacting the staff at the
+location. You can find the correct contact information by logging into
+Varaamo and checking your own reservations.
+{% endtrans %}
