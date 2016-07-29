@@ -8,7 +8,20 @@ respa – Resource reservation and management service
 Installation
 ------------
 
-1. Create the database.
+1. Install necessary OS-level packages
+
+For Debian/Ubuntu (build-essential brings in basic compilers and such):
+apt-get install build-essential python3-dev libpq-dev libjpeg-dev
+
+For Mac OS X:
+similar packages are available through homebrew
+
+2. Create virtualenv (if wanted) and install Python dependencies through pip:
+pip install -r requirements.txt
+
+See below, how requirements.txt is handled
+
+3. Create the database.
 
 ```shell
 sudo -u postgres createuser -L -R -S respa
@@ -17,7 +30,7 @@ sudo -u postgres createdb -Orespa respa
 sudo -u postgres psql respa -c "CREATE EXTENSION postgis;"
 ```
 
-2. Run Django migrations and import data
+4. Run Django migrations and import data
 
 ```shell
 python manage.py migrate
@@ -27,7 +40,7 @@ python manage.py resources_import --all kirjasto10
 python manage.py resources_import --all kirjastot
 ```
 
-3. Ready to roll!
+5. Ready to roll!
 
 ### Setting up PostGIS/GEOS/GDAL on Windows (x64) / Python 3
 
