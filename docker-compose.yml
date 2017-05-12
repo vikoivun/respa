@@ -1,0 +1,12 @@
+version: '2'
+services:
+  db:
+    image: mdillon/postgis:9.5
+  web:
+    build: .
+    working_dir: /code
+    command: ./docker-entrypoint.sh
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
