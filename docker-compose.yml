@@ -6,6 +6,8 @@ services:
     build: .
     working_dir: /code
     command: ./docker-entrypoint.sh
+    volumes:
+      - ../respa_config:/srv/django_local_settings.d
     ports:
       - "8000:8000"
     depends_on:

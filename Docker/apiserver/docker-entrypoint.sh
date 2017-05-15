@@ -1,8 +1,9 @@
 #!/bin/bash
 
-# Parameters
-UWSGI_PROCESSES=4
-UWSGI_THREADS=1
+# Parameters, this syntax avoids having to repeat the variable name
+# http://stackoverflow.com/questions/4437573/bash-assign-default-value
+: ${UWSGI_PROCESSES:=4}
+: ${UWSGI_THREADS:=1}	
 
 # Collect static files
 echo "Collect static files"
@@ -36,6 +37,7 @@ python manage.py migrate
 
 # Start server
 echo "Starting server"
-uwsgi --http 0.0.0.0:8000 --wsgi-file respa/wsgi.py --callable application \
+uwsgi --http 0.0.0.0:8000 --mount /virkarespa=respa/wsgi.py --callable application \
       --processes $UWSGI_PROCESSES --threads $UWSGI_THREADS --master \
-      --reload-on-rss 300 --chunked-input-limit 10485760
+      --reload-on-rss 300 --chunked-input-limit 10485760 \
+      --check-static /srv/files
