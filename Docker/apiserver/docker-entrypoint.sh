@@ -37,7 +37,9 @@ python manage.py migrate
 
 # Start server
 echo "Starting server"
-uwsgi --http 0.0.0.0:8000 --mount /virkarespa=respa/wsgi.py --callable application \
+uwsgi --http 0.0.0.0:8000 \
+      --mount /virkarespa=respa/wsgi.py --callable application \
+      --manage-script-name \
       --processes $UWSGI_PROCESSES --threads $UWSGI_THREADS --master \
       --reload-on-rss 300 --chunked-input-limit 10485760 \
-      --check-static /srv/files
+      --static-map /virkarespa/static=/srv/files/static
