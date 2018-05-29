@@ -1,14 +1,32 @@
 version: '2'
 services:
-  db:
-    image: mdillon/postgis:9.5
-  web:
-    build: .
-    working_dir: /code
-    command: ./docker-entrypoint.sh
-    volumes:
-      - ../respa_config:/srv/django_local_settings.d
-    ports:
-      - "8000:8000"
+  database:
+    environment:
+      POSTGRES_PASSWORD: mjJTAxyin1JF2KJFR9hu
+      POSTGRES_USER: respa-api-dev
+    image: mdillon/postgis
+  backend:
+    user: respa-api
     depends_on:
-      - db
+      - "database"
+    # We use this to restart backend until it can connect to
+    # the database (ie. it is done preparing the database)
+    restart: on-failure
+    environment:
+      # docker-compose is supposed to be for developin'
+      DEBUG: "yes"
+      # This is a mess
+      PGPASSWORD: mjJTAxyin1JF2KJFR9hu
+      DATABASE_HOST: database
+      DATABASE_USER: respa-api-dev
+      # Wish it was just this
+      DATABASE_URL: postgis://respa-api-dev:mjJTAxyin1JF2KJFR9hu@database/respa-api-dev
+      URL_PREFIX: /respa
+      # This should be volume'd
+      MEDIA_ROOT: /service-data/media
+      STATIC_ROOT: /home/respa-api/static
+    image: helsinki/respa-api
+    ports:
+      - "8080:8080"
+    volumes:
+      - /Users/ville/volumet/respa:/service-data/media
