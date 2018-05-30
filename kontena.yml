@@ -1,0 +1,45 @@
+stack: helsinki/respa-api
+version: 0.0.1
+variables:
+  respa-postgresql-pass:
+    type: string
+    from:
+      vault: respa-postgresql-pass
+      random_string: 32
+    to:
+      vault: respa-postgresql-pass
+  respa-secret-key:
+    type: string
+    from:
+      vault: respa-secret-key
+      random_string: 32
+    to:
+      vault: respa-secret-key
+  respa-jwt-shared-secret:
+    type: string
+    from:
+      vault: respa-jwt-prod-secret
+      prompt: Enter JWT shared secret for production Respa
+    to:
+      vault: respa-jwt-prod-secret
+services:
+  respa-backend:
+    image: helsinki/respa-api:latest
+    stateful: true
+    ports:
+      - 80:80
+    environment:
+      - ADMINS: dev@hel.fi
+      - DATABASE_URL: postgis://respa-api-prod:${respa-postgresql-pass}@respa-db-prod/respa-api-prod
+    secrets:
+      - secret: respa-secret-key
+        name: SECRET_KEY
+        type: env
+      - secret: respa-jwt-prod-secret
+        name: JWT_SECRET_KEY
+        type: env
+      - secret: respa-postgresql-pass
+        name: SECRET_DB_PASS
+        type: env
+  respa-db-prod:
+    image:
