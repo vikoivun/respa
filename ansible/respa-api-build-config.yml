@@ -1,0 +1,61 @@
+# Used to configure python appserver below
+wsgi_entrypoint: respa
+
+django_user: respa-api
+# This is the directory the source code if checked out to
+# also the prefix for all cookies
+django_name: respa
+# Don't use system python on docker
+django_install_system_python: false
+# No special things needed for Pillow any more?
+django_pillow: no
+# Install packages needed for lxml Python module
+django_lxml: yes
+
+django_deb_deps:
+  - libgdal20
+
+#django_skip_git: yes
+#django_sync_source: /Users/ville/Documents/src-nosync/respa/
+
+django_git_url: https://github.com/City-of-Helsinki/respa.git
+django_git_version: master
+# Only switch to true if repo is borked
+django_git_force_pull: false
+
+# This only runs manage.py rebuild_index
+django_full_reinit: false
+
+# For docker these must be run runtime
+django_run_migrations: false
+
+# Useless cruft for docker
+django_create_local_settings: false
+django_enable_local_settings_d: false
+# Respa has been environmentalized and does not speed
+# special local_settings file
+django_create_contained_local_settings: false
+
+#django_setup_commands:
+#- install_templates helevents
+# These are for special cases. Just restore the backup instead
+#- geo_import finland --municipalities
+#- geo_import helsinki --divisions
+
+# Not done in docker
+pycont_start_service: false
+pycont_use_python_plugin: false
+# Done in docker
+pycont_use_pypi: true
+pycont_user: "{{ django_user }}"
+# Note that pycont_url_prefix is appended to paths
+# specified here
+pycont_static_maps:
+  /static: /home/respa-api/static
+  /media: /home/respa-api/media
+# This is the name of system services and such
+pycont_name: "respa-api"
+pycont_app_name: "{{ wsgi_entrypoint }}"
+pycont_app_path: "{{ django_name }}"
+pycont_url_prefix: "$(URL_PREFIX)"
+pycont_contract_http: 8080

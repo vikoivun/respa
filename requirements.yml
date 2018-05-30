@@ -1,0 +1,2 @@
+- src: https://github.com/City-of-Helsinki/ansible-hel-django
+- src: https://github.com/City-of-Helsinki/ansible-hel-wsgi-runtime

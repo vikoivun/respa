@@ -1,0 +1,61 @@
+---
+- name: Create base image
+  hosts: localhost
+  tasks:
+  - debug: var=recreate_image
+  - name: Create container for building image
+    docker_container:
+      name: respa_builder
+      image: python:3.6-stretch
+      # This is here, in order to keep the container running
+      interactive: true
+      # Does not really affect anything, just pretty during debugging
+      hostname: respa-api
+      state: started
+      recreate: "{{ recreate_image|default(true) }}"
+  - name: Add container to dynamic inventory
+    add_host:
+      name: respa_builder
+      ansible_connection: docker
+      ansible_user: root
+
+- name: Build respa in container
+  hosts: respa_builder
+  become: yes
+  become_method: su
+  vars_files:
+    - ansible/respa-api-build-config.yml
+  roles:
+    - ansible-hel-django
+    - ansible-hel-wsgi-runtime
+  tasks:
+    - name: Create /service_data/media directory for data volume mounting
+      file:
+        path: /service_data/media
+        state: directory
+        owner: respa-api
+        mode: 0755
+    # For initializing database (like hstore extension)
+    - name: Install PostgreSQL client
+      apt:
+        name: postgresql-client-9.6
+        state: present
+    - name: Insert entrypoint into docker_container
+      copy:
+        src: ansible/files/docker-entrypoint.sh
+        dest: /docker-entrypoint.sh
+        mode: 0755
+
+- name: Finalize container
+  hosts: localhost
+  become: no
+  tasks:
+    - debug: var=recreate_image
+    - name: Commit and define entrypoint in image
+      command: docker commit --change "ENTRYPOINT /docker-entrypoint.sh" --change "USER respi-api" respa_builder helsinki/respa-api
+    - debug: var=recreate_image
+    - name: Destroy the build container
+      docker_container:
+        name: respa_builder
+        state: absent
+      when: (recreate_image|default(true) == true)
